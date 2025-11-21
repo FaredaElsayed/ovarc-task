@@ -13,7 +13,7 @@ const randomColorGenerator = ()=>{
 }
 const BookCard = ({ title, author, stores }) => {
   return (
-    <div className="bg-white shadow-md rounded-lg p-4 flex gap-4 w-full max-w-md">
+    <div className="bg-white shadow-md rounded-lg p-4 flex gap-4 w-full min-w-fit max-w-xl">
       {/* Book Cover */}
       <div
         className="flex items-center justify-center h-48 w-28 bg-peach-100 rounded-lg"

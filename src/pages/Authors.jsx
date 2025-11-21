@@ -1,36 +1,42 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import Header from '../components/Header';
-import Loading from './Loading';
-import Table from '../components/Table/Table';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from "react";
+import Header from "../components/Header";
+import Loading from "./Loading";
+import Table from "../components/Table/Table";
+import { useSearchParams } from "react-router-dom";
 
-import Modal from '../components/Modal';
-import TableActions from '../components/ActionButton/TableActions';
+import Modal from "../components/Modal";
+import ConfirmModal from "../components/ConfirmModal";
+import TableActions from "../components/ActionButton/TableActions";
+import { fetchResource } from "../services/apiClient";
+import { useAuth } from "../context/AuthContext";
 
 const Authors = () => {
   const [authors, setAuthors] = useState([]);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") || ""
+  );
   const [editingRowId, setEditingRowId] = useState(null);
-  const [editName, setEditName] = useState('');
-  const [newName, setNewName] = useState('');
+  const [editName, setEditName] = useState("");
+  const [newName, setNewName] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const { isAuthenticated } = useAuth();
 
   // Sync searchTerm with query params
   useEffect(() => {
-    const search = searchParams.get('search') || '';
+    const search = searchParams.get("search") || "";
     setSearchTerm(search);
   }, [searchParams]);
 
   // Fetch JSON data
   useEffect(() => {
-    fetch('/data/authors.json')
-      .then((response) => response.json())
+    fetchResource("authors")
       .then((data) => {
-        console.log('Fetched authors:', data);
+        console.log("Fetched authors:", data);
         setAuthors(Array.isArray(data) ? data : [data]);
       })
-      .catch((error) => console.error('Error fetching authors:', error));
+      .catch((error) => console.error("Error fetching authors:", error));
   }, []);
 
   // filter based on search
@@ -44,13 +50,20 @@ const Authors = () => {
     );
   }, [authors, searchTerm]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setEditingRowId(null);
+      setEditName("");
+    }
+  }, [isAuthenticated]);
+
   const columns = useMemo(
     () => [
-      { header: 'ID', accessorKey: 'id' },
+      { header: "ID", accessorKey: "id" },
       {
-        header: 'Name',
+        header: "Name",
         accessorFn: (row) => `${row.first_name} ${row.last_name}`,
-        id: 'name',
+        id: "name",
         cell: ({ row }) =>
           editingRowId === row.original.id ? (
             <input
@@ -58,9 +71,9 @@ const Authors = () => {
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleSave(row.original.id);
-                } else if (e.key === 'Escape') {
+                } else if (e.key === "Escape") {
                   handleCancel();
                 }
               }}
@@ -73,43 +86,56 @@ const Authors = () => {
           ),
       },
       {
-        header: 'Actions',
-        id: 'actions',
+        header: "Actions",
+        id: "actions",
         cell: ({ row }) => (
-          <TableActions 
+          <TableActions
             row={row}
             onEdit={
               editingRowId === row.original.id
                 ? handleCancel
                 : () => handleEdit(row.original)
             }
-            onDelete={() => deleteAuthor(row.original.id, row.original.first_name, row.original.last_name)}
+            onDelete={() =>
+              deleteAuthor(
+                row.original.id,
+                row.original.first_name,
+                row.original.last_name
+              )
+            }
+            disabled={!isAuthenticated}
           />
         ),
       },
     ],
-    [[editingRowId, editName]]
+    [[editingRowId, editName], isAuthenticated]
   );
 
-  const deleteAuthor = (id, first_name, last_name) => {
-    // show prompt
+  const deleteAuthor = (id) => {
+    if (!isAuthenticated) return;
+    setConfirmDeleteId(id);
+  };
 
-    if (window.confirm(`Are you sure you want to delete ${first_name} ${last_name}?`)) {
-      setAuthors((prevAuthors) => prevAuthors.filter((author) => author.id !== id));
-      setEditingRowId(null);
-      setEditName('');
-      setNewName('');
-    }
+  const handleConfirmDelete = () => {
+    if (!confirmDeleteId) return;
+    setAuthors((prevAuthors) =>
+      prevAuthors.filter((author) => author.id !== confirmDeleteId)
+    );
+    setEditingRowId(null);
+    setEditName("");
+    setNewName("");
+    setConfirmDeleteId(null);
   };
 
   const handleEdit = (author) => {
+    if (!isAuthenticated) return;
     setEditingRowId(author.id);
     setEditName(`${author.first_name} ${author.last_name}`);
   };
 
   const handleSave = (id) => {
-    const [first_name, ...last_name_parts] = editName.trim().split(' ');
-    const last_name = last_name_parts.join(' ');
+    const [first_name, ...last_name_parts] = editName.trim().split(" ");
+    const last_name = last_name_parts.join(" ");
 
     setAuthors(
       authors.map((author) =>
@@ -119,60 +145,63 @@ const Authors = () => {
       )
     );
 
-
     setEditingRowId(null);
-    setEditName('');
+    setEditName("");
   };
 
   const handleCancel = () => {
     setEditingRowId(null);
-    setEditName('');
+    setEditName("");
   };
 
   const openModal = () => {
+    if (!isAuthenticated) return;
     setShowModal(true);
   };
   const closeModal = () => {
     setShowModal(false);
   };
   const handleAddNew = () => {
-    if (newName.trim() === '') {
+    if (!isAuthenticated) return;
+    if (newName.trim() === "") {
       return;
     }
-    const [first_name, ...last_name_parts] = newName.trim().split(' ');
-    const last_name = last_name_parts.join(' ');
+    const [first_name, ...last_name_parts] = newName.trim().split(" ");
+    const last_name = last_name_parts.join(" ");
 
     const newAuthor = {
       id: authors.length + 1,
       first_name,
-      last_name: last_name || '',
+      last_name: last_name || "",
     };
 
     setAuthors((prevAuthors) => [...prevAuthors, newAuthor]);
-    
 
-    setNewName('');
+    setNewName("");
     closeModal();
   };
 
   return (
-    <div className='py-6'>
-      <Header addNew={openModal} title="Authors List" />
+    <div className="py-6">
+      <Header
+        addNew={openModal}
+        title="Authors List"
+        buttonDisabled={!isAuthenticated}
+        buttonHint="Sign in to add authors"
+      />
       {authors.length > 0 ? (
-        <Table
-          data={filteredAuthors}
-          columns={columns}
-         
-        />
+        <Table data={filteredAuthors} columns={columns} />
       ) : (
         <Loading />
       )}
       <Modal
-        title={' New Author'}
+        title={" New Author"}
         save={handleAddNew}
         cancel={closeModal}
         show={showModal}
-        setShow={setShowModal}
+        confirmLabel="Save"
+        cancelLabel="Close"
+        disableConfirm={!isAuthenticated}
       >
         <div className="flex flex-col gap-2 w-full">
           <span>Author Name</span>
@@ -186,6 +215,13 @@ const Authors = () => {
           <span className="hidden text-red-500">Please enter a name</span>
         </div>
       </Modal>
+      <ConfirmModal
+        show={Boolean(confirmDeleteId)}
+        title="Delete Author"
+        message="Are you sure you want to delete this author?"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 };

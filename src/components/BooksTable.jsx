@@ -1,7 +1,7 @@
 // src/components/BooksTable.jsx
-import React, { useMemo } from 'react';
-import Table from './Table/Table';
-import TableActions from './ActionButton/TableActions';
+import React, { useMemo } from "react";
+import Table from "./Table/Table";
+import TableActions from "./ActionButton/TableActions";
 
 const BooksTable = ({
   books,
@@ -12,7 +12,8 @@ const BooksTable = ({
   setEditName,
   setBooks,
   deleteBook,
-  columnsConfig = ['id', 'name', 'pages', 'author', 'actions'], // Default columns
+  columnsConfig = ["id", "name", "pages", "author", "actions"], // Default columns
+  actionsDisabled = false,
 }) => {
   // Create a lookup map for authors
   const authorMap = useMemo(() => {
@@ -26,17 +27,17 @@ const BooksTable = ({
   const enrichedBooks = useMemo(() => {
     return books.map((book) => ({
       ...book,
-      author_name: authorMap[book.author_id] || 'Unknown Author',
+      author_name: authorMap[book.author_id] || "Unknown Author",
     }));
   }, [books, authorMap]);
 
   // Define all possible columns
   const allColumns = useMemo(
     () => ({
-      id: { header: 'Book Id', accessorKey: 'id' },
+      id: { header: "Book Id", accessorKey: "id" },
       name: {
-        header: 'Name',
-        accessorKey: 'name',
+        header: "Name",
+        accessorKey: "name",
         cell: ({ row }) =>
           editingRowId === row.original.id ? (
             <input
@@ -44,8 +45,8 @@ const BooksTable = ({
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSave(row.original.id);
-                if (e.key === 'Escape') handleCancel();
+                if (e.key === "Enter") handleSave(row.original.id);
+                if (e.key === "Escape") handleCancel();
               }}
               className="border border-gray-300 rounded p-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
@@ -54,12 +55,12 @@ const BooksTable = ({
             row.original.name
           ),
       },
-      pages: { header: 'Pages', accessorKey: 'page_count' },
-      author: { header: 'Author', accessorKey: 'author_name' },
-      price: { header: 'Price', accessorKey: 'price' },
+      pages: { header: "Pages", accessorKey: "page_count" },
+      author: { header: "Author", accessorKey: "author_name" },
+      price: { header: "Price", accessorKey: "price" },
       actions: {
-        header: 'Actions',
-        id: 'actions',
+        header: "Actions",
+        id: "actions",
         cell: ({ row }) => (
           <TableActions
             row={row}
@@ -69,11 +70,12 @@ const BooksTable = ({
                 : () => handleEdit(row.original)
             }
             onDelete={() => deleteBook(row.original.id, row.original.name)}
+            disabled={actionsDisabled}
           />
         ),
       },
     }),
-    [editingRowId, editName]
+    [editingRowId, editName, actionsDisabled]
   );
 
   // Select columns based on columnsConfig
@@ -83,6 +85,7 @@ const BooksTable = ({
 
   // Handle editing
   const handleEdit = (book) => {
+    if (actionsDisabled) return;
     setEditingRowId(book.id);
     setEditName(book.name);
   };
@@ -90,18 +93,16 @@ const BooksTable = ({
   // Save edited name
   const handleSave = (id) => {
     setBooks(
-      books.map((book) =>
-        book.id === id ? { ...book, name: editName } : book
-      )
+      books.map((book) => (book.id === id ? { ...book, name: editName } : book))
     );
     setEditingRowId(null);
-    setEditName('');
+    setEditName("");
   };
 
   // Cancel editing
   const handleCancel = () => {
     setEditingRowId(null);
-    setEditName('');
+    setEditName("");
   };
 
   return <Table data={enrichedBooks} columns={columns} />;

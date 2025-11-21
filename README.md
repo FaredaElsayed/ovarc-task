@@ -11,19 +11,45 @@
    ```bash
    npm install
    ```
-2. **Start the development server**:
+2. **Start the mock API server**:
+   ```bash
+   npm run mock-server
+   ```
+3. **Start the development server**:
    ```bash
    npm run dev
    ```
 
-3. **Build for production**:
+4. **Build for production**:
    ```bash
    npm run build
    ```  
 
+## Environment configuration
+
+The frontend can talk to either the real backend or the local mock API by setting `VITE_API_SOURCE`.
+
+- `VITE_API_SOURCE=backend` – use the actual backend defined by `VITE_BACKEND_URL` (defaults to the bundled `/data` JSON files).
+- `VITE_API_SOURCE=mock` – proxy requests to the mock API defined by `VITE_MOCK_SERVER_URL` (defaults to `http://localhost:4000/api`).
+
+Create env file =>   `.env`:
+
+```
+VITE_API_SOURCE=mock
+VITE_BACKEND_URL=/data
+VITE_MOCK_SERVER_URL=http://localhost:4000/api
+```
+
+## Authentication
+
+- The UI now starts in a signed-out state, so no user profile is shown until a user signs in.
+- To sign in Use the mock credentials `admin@ovarc.dev / password123` when the mock server is running to authenticate.
+- Signing out clears the local session.
+- Only authenticated users can add inventory items or edit/delete entries within a the system.
+
 ## Features
+
 1. **Shop Page**: 
-   
    It has a list of cards containing the book cover page, title & author, and which stores this book is available in. The sell button should mark this as sold but keep the card on the page.
 
 2. **Authors Page** 
@@ -41,7 +67,7 @@
 5. **Store Inventory Page**
 
    This is where the admin adds more books to the store’s
-inventory. The books should be viewable either in a list view or grouped by the author via the tab selection. The add to inventory CTA pops up a modal to select the new book and set its price.
+   inventory. The books should be viewable either in a list view or grouped by the author via the tab selection. The add to inventory CTA pops up a modal to select the new book and set its price.
 
 ## Project Structure
 - src/pages/: Contains page components like Home, BrowseStores, Browse, BrowseAuthors, and Inventory.
