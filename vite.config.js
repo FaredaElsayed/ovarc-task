@@ -1,8 +1,6 @@
-process.env.CSS_TRANSFORMER_WASM = process.env.CSS_TRANSFORMER_WASM ?? '1'
-
-const { defineConfig } = await import('vite')
-const react = (await import('@vitejs/plugin-react')).default
-const tailwindcss = (await import('@tailwindcss/vite')).default
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,5 +8,8 @@ export default defineConfig({
   resolve: {
     extensions: ['.js', '.jsx', '.json']
   },
-  base: import.meta.VITE_BASE_PATH || '/'
+  base: import.meta.VITE_BASE_PATH || '/',
+  css: {
+    transformer: 'postcss'
+  }
 })
